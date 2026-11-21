@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Star Quest: Reading and Math</title>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#fff7e0;--card:#fff;--ink:#23294a;--line:#e3d9b8;--rd:#2f6fed;--mt:#12905f;--ok:#1f9d55;--bad:#d6453d;--sky:#bfe6ff;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);color-scheme:light}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#171b33;--card:#232a4d;--ink:#f4f1ff;--line:#3a4375;--rd:#7fa6ff;--mt:#55d6a0;--ok:#52d98a;--bad:#ff857d;--sky:#27406b;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#171b33;--card:#232a4d;--ink:#f4f1ff;--line:#3a4375;--rd:#7fa6ff;--mt:#55d6a0;--ok:#52d98a;--bad:#ff857d;--sky:#27406b;color-scheme:dark}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Fredoka","Trebuchet MS","Comic Sans MS",sans-serif;min-height:100vh}
+body[data-mode=read]{--accent:var(--rd)}body[data-mode=math]{--accent:var(--mt)}
+main{max-width:560px;margin:0 auto;padding:18px 16px 40px}
+h1{font-size:2.3rem;margin:12px 0 4px;text-align:center}
+.sub{text-align:center;font-size:1.1rem;margin:0 0 22px}
+.pick{display:flex;flex-direction:column;gap:16px}
+.big{font:inherit;display:block;width:100%;text-align:left;border:4px solid var(--c);background:var(--card);color:var(--ink);border-radius:26px;padding:20px 22px;cursor:pointer;min-height:96px}
+.big b{font-size:1.7rem;display:block;color:var(--c)}.big span{font-size:1.05rem}
+.big:active,.opt:active{transform:scale(.98)}
+button:focus-visible{outline:4px solid var(--accent,var(--rd));outline-offset:3px}
+.top{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}
+.pill{font:inherit;font-size:1rem;border:3px solid var(--line);background:var(--card);color:var(--ink);border-radius:999px;padding:8px 16px;cursor:pointer}
+.dots{font-size:1.25rem;letter-spacing:1px;text-align:center;flex:1}
+.card{background:var(--card);border:4px solid var(--accent);border-radius:28px;padding:22px 20px}
+.story{font-size:1.75rem;line-height:1.4;font-weight:600;margin:0 0 14px}
+.q{font-size:1.5rem;color:var(--accent);font-weight:700;margin:0 0 16px;min-height:1em}
+.opts{display:grid;gap:12px}
+.opt{font:inherit;font-size:1.55rem;font-weight:600;border:3px solid var(--line);background:var(--bg);color:var(--ink);border-radius:20px;padding:14px;cursor:pointer;min-height:64px}
+.opt.good{background:var(--ok);border-color:var(--ok);color:#fff}
+.opt.no{border-color:var(--bad);color:var(--bad);opacity:.6;text-decoration:line-through}
+.fb{font-size:1.3rem;font-weight:600;text-align:center;min-height:2em;margin:14px 0 0}
+.say{font:inherit;border:0;background:none;font-size:1.05rem;color:var(--accent);cursor:pointer;padding:4px 0;margin-bottom:6px}
+.gtop{display:flex;justify-content:space-between;font-size:1.4rem;font-weight:700;margin:6px 4px}
+#gmsg{text-align:center;font-size:1.2rem;font-weight:600;min-height:1.6em;margin:6px 0}
+canvas{display:block;width:100%;max-width:360px;margin:0 auto;border-radius:22px;border:4px solid var(--accent);background:linear-gradient(var(--sky),var(--card));touch-action:none}
+.grid{display:grid;grid-template-columns:repeat(6,1fr);gap:6px;max-width:360px;margin:0 auto}
+.grid button{font:inherit;font-size:1.5rem;font-weight:700;aspect-ratio:1;border:0;border-radius:12px;background:var(--accent);color:#fff;cursor:pointer;padding:0}
+.grid button.r{background:var(--bg);border:2px solid var(--line);cursor:default}
+.go{font:inherit;font-size:1.4rem;font-weight:700;display:block;margin:18px auto 0;border:0;background:var(--accent);color:#fff;border-radius:999px;padding:14px 30px;cursor:pointer}
+[hidden]{display:none!important}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<main>
+<section id="home">
+<h1>⭐ Star Quest</h1>
+<p class="sub">Get 10 answers right to unlock a 2-minute game!</p>
+<div class="pick">
+<button class="big" style="--c:var(--rd)" data-go="read"><b>📖 Reading</b><span>Read a sentence and answer questions</span></button>
+<button class="big" style="--c:var(--mt)" data-go="math"><b>➕ Math</b><span>Add, subtract, and solve story problems</span></button>
+</div>
+</section>
+
+<section id="quiz" hidden>
+<div class="top"><button class="pill" id="home-btn">← Home</button><div class="dots" id="dots" aria-live="polite"></div></div>
+<div class="card">
+<button class="say" id="say">🔊 Read to me</button>
+<p class="story" id="story"></p>
+<p class="q" id="q"></p>
+<div class="opts" id="opts"></div>
+<p class="fb" id="fb" aria-live="polite"></p>
+</div>
+</section>
+
+<section id="game" hidden>
+<h1 id="gtitle"></h1>
+<div class="gtop"><span>⏱ <span id="time">2:00</span></span><span>⭐ <span id="score">0</span></span></div>
+<p id="gmsg"></p>
+<div id="gbox"></div>
+<button class="go" id="gback"></button>
+</section>
+</main>
+
+<script>
+const $=s=>document.querySelector(s),rnd=n=>Math.floor(Math.random()*n);
+const shuf=a=>{a=[...a];for(let i=a.length-1;i>0;i--){const j=rnd(i+1);[a[i],a[j]]=[a[j],a[i]]}return a};
+const R=[
+"Bob picked up the book.|What did Bob do?|Picked up a book|Ate lunch|Went to bed",
+"The red dog ran to the park.|Where did the dog run?|To the park|To school|To the store",
+"Mia has a blue hat.|What color is Mia’s hat?|Blue|Red|Green",
+"It was raining, so Sam took his umbrella.|Why did Sam take his umbrella?|It was raining|It was sunny|He was hungry",
+"The cat sat on the warm rug.|Where did the cat sit?|On the rug|On the bed|On the chair",
+"Lily and Max ate apples after school.|What did they eat?|Apples|Cookies|Pizza",
+"Tom was sad because his ice cream fell.|Why was Tom sad?|His ice cream fell|He lost a toy|It was bedtime",
+"A little bird built a nest in the tall tree.|What did the bird build?|A nest|A house|A boat",
+"Ana went to bed early because she was sleepy.|How did Ana feel?|Sleepy|Angry|Silly",
+"The frog jumped over the log and into the pond.|Where did the frog end up?|In the pond|On the log|In the tree",
+"Ben clapped his hands because the show was great.|Who clapped?|Ben|Mia|The frog",
+"On Saturday, Dad baked a big cake.|Who baked the cake?|Dad|Mom|Grandma",
+"The sun came up, and the rooster crowed.|What crowed?|The rooster|The cow|The duck",
+"Zoe packed a sandwich, an apple, and juice for her trip.|How many things did Zoe pack?|3|2|4",
+"Sam is taller than Jo.|Who is shorter?|Jo|Sam|They are the same",
+"The snow was cold, so Kia wore mittens.|What did Kia wear?|Mittens|Sandals|A swimsuit"];
+const NM=["Bob","Mia","Sam","Ava","Leo","Zoe"],IT=["pizza slices","apples","stickers","balloons","cookies","crayons"];
+function genMath(){
+ const n=NM[rnd(6)],it=IT[rnd(6)],t=rnd(4);let a,b,ans,s;
+ if(t==0){a=rnd(15)+1;b=rnd(20-a)+1;ans=a+b;s=`What is ${a} + ${b}?`}
+ else if(t==1){a=rnd(15)+5;b=rnd(a)+1;ans=a-b;s=`What is ${a} − ${b}?`}
+ else if(t==2){a=rnd(15)+3;b=rnd(10)+2;ans=a+b;s=`${n} had ${a} ${it}. ${n} got ${b} more ${it}. How many ${it} does ${n} have now?`}
+ else{a=rnd(14)+6;b=rnd(a-2)+1;ans=a-b;s=`${n} had ${a} ${it}. ${n} gave away ${b}. How many ${it} are left?`}
+ const d=shuf([1,-1,2,-2,10,-10].map(x=>ans+x).filter(x=>x>=0)).slice(0,2);
+ return {s,q:"",o:shuf([ans,...d].map(String)),a:String(ans)};
+}
+let mode,solved=0,pool=[],cur,done,stop=()=>{},tm;
+const show=id=>["home","quiz","game"].forEach(x=>$("#"+x).hidden=x!=id);
+function say(t){try{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(t);u.rate=.85;speechSynthesis.speak(u)}catch(e){}}
+function dots(){$("#dots").textContent="⭐".repeat(solved)+"☆".repeat(10-solved)}
+function next(){
+ done=false;$("#fb").textContent="";
+ if(mode=="read"){if(!pool.length)pool=shuf(R);const p=pool.pop().split("|");cur={s:p[0],q:p[1],a:p[2],o:shuf(p.slice(2))}}
+ else cur=genMath();
+ $("#story").textContent=cur.s;$("#q").textContent=cur.q;$("#say").hidden=false;
+ const box=$("#opts");box.innerHTML="";
+ cur.o.forEach(t=>{const b=document.createElement("button");b.className="opt";b.textContent=t;b.onclick=()=>pick(b,t);box.append(b)});
+}
+function pick(b,t){
+ if(done)return;
+ if(t==cur.a){done=true;b.classList.add("good");solved++;dots();
+  $("#fb").textContent=["Great job! 🎉","You got it! 🌟","Awesome! 🚀","Super smart! 🦄"][rnd(4)];
+  setTimeout(()=>solved>=10?startGame():next(),1100)}
+ else{b.classList.add("no");b.disabled=true;$("#fb").textContent="Not quite. Try again! 💪"}
+}
+function start(m){mode=m;document.body.dataset.mode=m;solved=0;pool=[];dots();show("quiz");next()}
+document.querySelectorAll("[data-go]").forEach(b=>b.onclick=()=>start(b.dataset.go));
+$("#home-btn").onclick=()=>{stop();clearInterval(tm);try{speechSynthesis.cancel()}catch(e){}show("home")};
+$("#say").onclick=()=>say(cur.s+" "+cur.q);
+
+function startGame(){
+ show("game");$("#score").textContent=0;$("#gmsg").textContent="";
+ const read=mode=="read";
+ $("#gtitle").textContent=read?"✈️ Sky Flyer":"💣 Safe Squares";
+ $("#gback").textContent=read?"Back to reading":"Back to math";
+ $("#gmsg").textContent=read?"Slide your finger to fly. Catch ⭐ and dodge 🌩️!":"Tap squares. Numbers tell how many 💣 are next to it. Don’t tap a bomb!";
+ const box=$("#gbox");box.innerHTML="";
+ stop=read?plane(box):sweep(box);
+ let left=120;$("#time").textContent="2:00";
+ clearInterval(tm);
+ tm=setInterval(()=>{left--;$("#time").textContent=Math.floor(left/60)+":"+String(left%60).padStart(2,"0");
+  if(left<=0){stop();clearInterval(tm);$("#gmsg").textContent="Time’s up! Great playing! 🎉"}},1000);
+}
+$("#gback").onclick=()=>{stop();clearInterval(tm);start(mode)};
+
+function plane(box){
+ const cv=document.createElement("canvas"),W=320,H=440;cv.width=W;cv.height=H;box.append(cv);
+ const c=cv.getContext("2d");let x=W/2,items=[],sc=0,last=performance.now(),sp=0,alive=true,raf;
+ const mv=e=>{const r=cv.getBoundingClientRect();x=Math.max(20,Math.min(W-20,(e.clientX-r.left)/r.width*W))};
+ cv.onpointermove=mv;cv.onpointerdown=mv;
+ const key=e=>{if(e.key=="ArrowLeft")x=Math.max(20,x-24);if(e.key=="ArrowRight")x=Math.min(W-20,x+24)};
+ addEventListener("keydown",key);
+ function f(t){
+  if(!alive)return;
+  const d=Math.min((t-last)/1000,.05);last=t;sp+=d;
+  if(sp>.7){sp=0;items.push({x:20+Math.random()*(W-40),y:-20,s:Math.random()<.65})}
+  c.clearRect(0,0,W,H);c.textAlign="center";c.font="30px serif";
+  items.forEach(o=>{o.y+=130*d;c.fillText(o.s?"⭐":"🌩️",o.x,o.y);
+   if(Math.abs(o.x-x)<30&&Math.abs(o.y-(H-50))<30){o.dead=1;sc=Math.max(0,sc+(o.s?1:-1));$("#score").textContent=sc}});
+  items=items.filter(o=>!o.dead&&o.y<H+30);
+  c.font="44px serif";c.fillText("✈️",x,H-40);
+  raf=requestAnimationFrame(f);
+ }
+ raf=requestAnimationFrame(f);
+ return()=>{alive=false;cancelAnimationFrame(raf);removeEventListener("keydown",key)};
+}
+
+function sweep(box){
+ const S=6,M=6,cols=["","#2f6fed","#1f9d55","#d6453d","#8a3fd1","#c46a00"];
+ let cells,first,over,alive=true,cleared=0,to;
+ const grid=document.createElement("div");grid.className="grid";box.append(grid);
+ function nb(i){const r=Math.floor(i/S),c=i%S,o=[];for(let a=-1;a<=1;a++)for(let b=-1;b<=1;b++){const y=r+a,x=c+b;if((a||b)&&y>=0&&y<S&&x>=0&&x<S)o.push(y*S+x)}return o}
+ function init(){if(!alive)return;cells=Array.from({length:S*S},()=>({m:0,r:0,n:0}));first=true;over=false;draw()}
+ function place(safe){let k=0;while(k<M){const i=rnd(S*S);if(i!=safe&&!cells[i].m){cells[i].m=1;k++}}cells.forEach((c,i)=>c.n=nb(i).filter(j=>cells[j].m).length)}
+ function reveal(i){const c=cells[i];if(c.r)return;c.r=1;if(!c.n&&!c.m)nb(i).forEach(reveal)}
+ function draw(){
+  grid.innerHTML="";
+  cells.forEach((c,i)=>{const b=document.createElement("button");
+   if(c.r){b.className="r";b.disabled=true;if(c.m)b.textContent="💣";else if(c.n){b.textContent=c.n;b.style.color=cols[c.n]}}
+   b.setAttribute("aria-label","square "+(i+1));b.onclick=()=>tap(i);grid.append(b)});
+ }
+ function tap(i){
+  if(over||cells[i].r)return;
+  if(first){place(i);first=false}
+  if(cells[i].m){over=true;cells.forEach(c=>{if(c.m)c.r=1});draw();$("#gmsg").textContent="Boom! Let’s try a new board.";to=setTimeout(init,1600);return}
+  reveal(i);draw();
+  if(cells.every(c=>c.m||c.r)){over=true;cleared++;$("#score").textContent=cleared;$("#gmsg").textContent="You cleared the board! 🎉";to=setTimeout(init,1600)}
+ }
+ init();
+ return()=>{alive=false;over=true;clearTimeout(to)};
+}
+dots();
+</script>
+</body>
+</html>
