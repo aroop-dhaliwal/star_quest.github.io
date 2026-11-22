@@ -12,7 +12,7 @@ canvas{display:block}
 #msg{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(3,6,12,.72);text-align:center;padding:20px;line-height:1.7}
 #msg h1{margin:0 0 8px;letter-spacing:.2em;font-size:clamp(22px,5vw,38px)}
 #msg p{margin:4px 0;color:#cfe;opacity:.85}
-#msg button{font:inherit;color:var(--hud);background:rgba(5,12,10,.6);border:1px solid var(--hud);border-radius:8px;padding:8px 14px;margin:4px;cursor:pointer}#msg button:disabled{opacity:.4;cursor:default}
+#msg button,#auth button,#adm button{font:inherit;color:var(--hud);background:rgba(5,12,10,.6);border:1px solid var(--hud);border-radius:8px;padding:8px 14px;margin:4px;cursor:pointer}#msg button:disabled{opacity:.4;cursor:default}
 #obj{position:fixed;top:calc(12px + env(safe-area-inset-top,0px));left:50%;transform:translateX(-50%);background:rgba(5,12,10,.65);border:1px solid rgba(125,255,178,.4);border-radius:8px;padding:8px 16px;text-align:center;max-width:90vw;font-size:14px;pointer-events:none}
 html,body{touch-action:none}
 #touch{display:none}body.touch #touch{display:block}
@@ -26,6 +26,12 @@ html,body{touch-action:none}
 #brk{position:fixed;right:calc(150px + env(safe-area-inset-right,0px));bottom:calc(100px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:8px}#brk .tb{width:86px;font-size:13px}
 #mt{position:fixed;top:calc(10px + env(safe-area-inset-top,0px));right:calc(10px + env(safe-area-inset-right,0px));z-index:20;font:inherit;font-size:12px;color:var(--hud);background:rgba(5,12,10,.65);border:1px solid rgba(125,255,178,.5);border-radius:8px;padding:6px 10px;cursor:pointer}
 body.touch #hud{padding-left:180px;padding-right:200px;gap:6px}body.touch .g{padding:4px 8px;min-width:58px}body.touch .g b{font-size:16px}body.touch .g span{font-size:9px}
+#auth,#adm{position:fixed;inset:0;z-index:30;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(3,6,12,.94);text-align:center;gap:8px;padding:20px}
+#auth h1{margin:0 0 6px;letter-spacing:.2em;font-size:clamp(22px,5vw,34px)}#auth p,#auth a{margin:2px 0;color:#cfe;font-size:13px}
+#auth input,#adm input{font:inherit;color:var(--hud);background:rgba(5,12,10,.8);border:1px solid var(--hud);border-radius:8px;padding:10px 14px;width:240px}
+#adm label{display:flex;justify-content:space-between;align-items:center;width:300px;gap:10px}#adm input{width:150px;padding:6px 10px}
+#bar{position:fixed;top:calc(10px + env(safe-area-inset-top,0px));left:calc(10px + env(safe-area-inset-left,0px));z-index:20;display:none;gap:6px;align-items:center;font-size:12px}
+#bar button{font:inherit;font-size:12px;color:var(--hud);background:rgba(5,12,10,.65);border:1px solid rgba(125,255,178,.5);border-radius:8px;padding:6px 10px;cursor:pointer}
 kbd{border:1px solid var(--hud);border-radius:4px;padding:1px 7px;color:var(--hud)}
 </style></head><body>
 <div id="hud">
@@ -41,6 +47,14 @@ kbd{border:1px solid var(--hud);border-radius:4px;padding:1px 7px;color:var(--hu
 </div>
 <div id="obj"></div>
 <button id="mt"></button>
+<div id="bar"><span id="bu"></span><button onclick="location.reload()">Log out</button><button id="badm" style="display:none" onclick="admOpen()">Admin</button></div>
+<div id="auth"><h1>F-117 NIGHTHAWK</h1><p>Log in to save your progress, or create an account.</p>
+<input id="au" placeholder="Username" autocomplete="username" autocapitalize="none"><input id="ap" type="password" placeholder="Password" autocomplete="current-password" onkeydown="if(event.key==='Enter')authGo(false)">
+<div><button onclick="authGo(false)">Log in</button><button onclick="authGo(true)">Create account</button></div><p id="am"></p>
+<a href="#" onclick="guest();return false">Play as guest (progress is not saved)</a></div>
+<div id="adm" style="display:none"><h2>ADMIN PANEL</h2>
+<label>Cash ($) <input id="a_m" type="number" min="0"></label><label>Faster plane level <input id="a_s" type="number" min="0"></label><label>More capacity level <input id="a_c" type="number" min="0"></label><label>Stronger carry level <input id="a_k" type="number" min="0"></label><label>Cargo belt level <input id="a_b" type="number" min="0"></label><label>Travellator level <input id="a_t" type="number" min="0"></label>
+<div><button onclick="admApply()">Apply and save</button><button onclick="$('adm').style.display='none'">Close</button></div></div>
 <div id="touch">
 <div id="joy"><div id="knob"></div></div>
 <div id="dpad"><button class="tb u" data-k="w">▲</button><button class="tb" data-k="a">◀</button><button class="tb" data-k="d">▶</button><button class="tb dn" data-k="s">▼</button></div>
@@ -117,8 +131,8 @@ jet.add(gear);
 jet.scale.setScalar(5);
 const outer=new THREE.Group();outer.add(jet);S.add(outer);
 // ---- boarding mission
-let DEST=CITIES[1];let money=0,spLv=0,capLv=0,carryLv=0,beltLv=0,travLv=0;try{const s=JSON.parse(localStorage.getItem('nh2')||'{}');money=s.m|0;spLv=s.s|0;capLv=s.c|0;carryLv=s.k|0;beltLv=s.b|0;travLv=s.t|0;}catch(e){}
-const cost=w=>((w==='b'&&!beltLv)||(w==='t'&&!travLv))?10000:5000,save=()=>{try{localStorage.setItem('nh2',JSON.stringify({m:money,s:spLv,c:capLv,k:carryLv,b:beltLv,t:travLv}));}catch(e){}};
+let DEST=CITIES[1];let money=0,spLv=0,capLv=0,carryLv=0,beltLv=0,travLv=0;
+const cost=w=>((w==='b'&&!beltLv)||(w==='t'&&!travLv))?10000:5000,save=()=>{if(!acct)return;acct.rec.d={m:money,s:spLv,c:capLv,k:carryLv,b:beltLv,t:travLv};putRec(acct.k,acct.rec);};
 const SM=()=>1.6*(1+.25*spLv)*(st.gear&&!st.grounded?.85:1)*(1-.9*ab),CC=()=>5+2*carryLv,NC=()=>5+3*capLv,NP=()=>6+3*capLv;
 const RL=()=>3500*(1+.5*spLv),setRW=()=>RWG.forEach(g=>g.scale.z=RL()/3500);
 function shop(){$('cash').textContent='Cash: $'+money.toLocaleString();
@@ -157,7 +171,7 @@ let st,over=true;const K={};
 function reset(){const c=CITIES[0];st={p:new THREE.Vector3(c.x,11,c.z+650),yaw:0,pitch:0,roll:0,spd:0,gear:true,grounded:true};thr=0;cam.set(c.x+10,8,c.z+690);DEST=CITIES[1+Math.floor(Math.random()*(CITIES.length-1))];db.position.set(DEST.x,7000,DEST.z);shop();setRW();ab=0;mode='walk';av.visible=true;ring.visible=true;av.position.set(c.x+30,0,c.z+660);av.rotation.y=0;setupLoad();}
 const $=id=>document.getElementById(id),clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 let thr=0,last=performance.now(),cam=new THREE.Vector3();reset();
-addEventListener('keydown',e=>{const k=e.key.toLowerCase();if(e.target.tagName==='BUTTON'&&(k==='enter'||k===' '))return;
+addEventListener('keydown',e=>{const k=e.key.toLowerCase();if(e.target.tagName==='INPUT')return;if(e.target.tagName==='BUTTON'&&(k==='enter'||k===' '))return;
  if(['arrowleft','arrowright','arrowup','arrowdown'].includes(k))e.preventDefault();
  if(over||k==='r'){reset();over=false;$('msg').style.display='none';return;}
  if(k==='g'&&!K.g&&!st.grounded&&mode==='fly')st.gear=!st.gear;
@@ -185,6 +199,29 @@ joy.addEventListener('pointermove',e=>{if(e.pointerId===jid)jmove(e);});
 const jend=e=>{if(e.pointerId!==jid)return;jid=null;knob.style.transform='';Object.keys(held).forEach(k=>jset(k,false));};
 joy.addEventListener('pointerup',jend);joy.addEventListener('pointercancel',jend);
 $('msg').addEventListener('pointerdown',e=>{if(e.target.closest('button'))return;if(over){reset();over=false;$('msg').style.display='none';}});
+// ---- accounts
+const ADMIN='aroop_dhaliwal',AH='823eb453f77c434c7aecce53d9da35c2eb735bcbb5977c68d960783f41d3b3d9',N=v=>Number(v)||0;
+let acct=null,admin=false;
+const dbP=(window.claude&&claude.use)?claude.use('db').catch(()=>null):Promise.resolve(null);
+const LS={get:k=>{try{return JSON.parse(localStorage.getItem('nh2a:'+k));}catch(e){return null;}},set:(k,v)=>{try{localStorage.setItem('nh2a:'+k,JSON.stringify(v));}catch(e){}}};
+async function getRec(k){const d=await dbP;if(d){try{const s=await d.doc('accounts/'+k).get();if(s.exists)return JSON.parse(JSON.stringify(s.data()));}catch(e){}}return LS.get(k);}
+async function putRec(k,v){const d=await dbP;if(d){try{await d.doc('accounts/'+k).set(v);return;}catch(e){}}LS.set(k,v);}
+async function pbk(pw,salt){const e=new TextEncoder(),key=await crypto.subtle.importKey('raw',e.encode(pw),'PBKDF2',false,['deriveBits']);
+ return [...new Uint8Array(await crypto.subtle.deriveBits({name:'PBKDF2',salt:e.encode(salt),iterations:100000,hash:'SHA-256'},key,256))].map(x=>x.toString(16).padStart(2,'0')).join('');}
+function enter(){$('auth').style.display='none';$('bar').style.display='flex';$('bu').textContent=acct?acct.name:'Guest';$('badm').style.display=admin?'':'none';}
+async function authGo(create){const n=$('au').value.trim(),pw=$('ap').value,k=n.toLowerCase(),m=$('am');
+ if(!/^[A-Za-z0-9_]{3,20}$/.test(n)||pw.length<4){m.textContent='Username: 3-20 letters, numbers or _. Password: at least 4 characters.';return;}
+ m.textContent='Working...';
+ try{const h=await pbk(pw,'nh2|'+k+'|v1'),isA=k===ADMIN;let rec=await getRec(k);
+  if(create&&!isA){if(rec){m.textContent='That username is taken.';return;}rec={h,d:{}};await putRec(k,rec);}
+  else{if(!(isA?h===AH:rec&&rec.h===h)){m.textContent='Wrong username or password.';return;}if(!rec)rec={h:'',d:{}};}
+  acct={k,name:n,rec};admin=isA;const d=rec.d||{};
+  money=N(d.m);spLv=N(d.s);capLv=N(d.c);carryLv=N(d.k);beltLv=N(d.b);travLv=N(d.t);setRW();shop();enter();
+ }catch(e){m.textContent='Something went wrong. Try again.';}}
+function guest(){acct=null;admin=false;enter();}
+function admOpen(){if(!admin)return;const f={m:money,s:spLv,c:capLv,k:carryLv,b:beltLv,t:travLv};for(const k in f)$('a_'+k).value=f[k];$('adm').style.display='flex';}
+function admApply(){if(!admin)return;const g=(k,mx)=>Math.min(mx,Math.max(0,Math.floor(+$('a_'+k).value)||0));
+ money=g('m',1e12);spLv=g('s',1000);capLv=g('c',500);carryLv=g('k',500);beltLv=g('b',500);travLv=g('t',500);setRW();save();shop();$('adm').style.display='none';}
 addEventListener('resize',()=>{R.setSize(innerWidth,innerHeight);C.aspect=innerWidth/innerHeight;C.updateProjectionMatrix();});
 function crash(t){if(over)return;over=true;shop();$('msg').style.display='flex';$('msg').querySelector('h1').textContent=t;$('sub').textContent='Press any key to restart on the runway';}
 function loop(t){requestAnimationFrame(loop);const dt=Math.min((t-last)/1000,.05);last=t;
