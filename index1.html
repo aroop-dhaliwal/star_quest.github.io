@@ -134,7 +134,7 @@ const outer=new THREE.Group();outer.add(jet);S.add(outer);
 let DEST=CITIES[1];let money=0,spLv=0,capLv=0,carryLv=0,beltLv=0,travLv=0;
 const cost=w=>((w==='b'&&!beltLv)||(w==='t'&&!travLv))?10000:5000,save=()=>{if(!acct)return;acct.rec.d={m:money,s:spLv,c:capLv,k:carryLv,b:beltLv,t:travLv};putRec(acct.k,acct.rec);};
 const SM=()=>1.6*(1+.25*spLv)*(st.gear&&!st.grounded?.85:1)*(1-.9*ab),CC=()=>5+2*carryLv,NC=()=>5+3*capLv,NP=()=>6+3*capLv;
-const RL=()=>3500*(1+.1*spLv),setRW=()=>RWG.forEach(g=>g.scale.z=RL()/3500);
+const RL=()=>3500*(1+.5*spLv),setRW=()=>RWG.forEach(g=>g.scale.z=RL()/3500);
 function shop(){$('cash').textContent='Cash: $'+money.toLocaleString();
  [['u1','Faster plane',spLv,'s'],['u2','More capacity',capLv,'c'],['u3','Stronger carry',carryLv,'k'],['u4','Cargo belt',beltLv,'b'],['u5','Travellator',travLv,'t']].forEach(([id,n,l,w])=>{const b=$(id),c=cost(w),un=(w==='b'||w==='t')&&!l;b.textContent=(un?'Buy '+n:n+' Lv '+l+' → '+(l+1))+' · $'+c.toLocaleString();b.disabled=money<c;});}
 function buy(w){const c=cost(w);if(money<c)return;if(w==='s'){spLv++;setRW();}else if(w==='c')capLv++;else if(w==='k')carryLv++;else if(w==='b')beltLv++;else if(w==='t')travLv++;else return;money-=c;save();shop();}
@@ -246,7 +246,7 @@ if(!over&&mode==='fly'){
  if(st.grounded)st.p.y=11;
  else if(st.p.y<(st.gear?11:2.5)){
   const vs=-f.y*st.spd*3*SM();
-  const ow=onRunway(st.p.x,st.p.z),wtr=inWater(st.p.x,st.p.z);if(!wtr&&st.gear&&vs<(ow?70:45)&&st.pitch<.35&&st.spd<(ow?175:140)){st.grounded=true;st.p.y=11;st.pitch=0;st.roll=0;}
+  const ow=onRunway(st.p.x,st.p.z),wtr=inWater(st.p.x,st.p.z);if(!wtr&&st.gear&&vs<(ow?70:45)*SM()&&st.pitch<.35&&st.spd<(ow?175:140)){st.grounded=true;st.p.y=11;st.pitch=0;st.roll=0;}
   else crash(wtr?'CRASHED INTO WATER':!st.gear?'GEAR UP: BELLY LANDING':'LANDED TOO HARD OR FAST');
  }
  for(const m of mnt)if(st.p.y<m.h&&Math.hypot(st.p.x-m.x,st.p.z-m.z)<m.r*(1-st.p.y/m.h)+12){crash('HIT A MOUNTAIN');break;}
